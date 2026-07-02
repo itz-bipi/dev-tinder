@@ -1,0 +1,15 @@
+{
+  "name": "devtinder",
+  "version": "1.0.0",
+  "description": "social app for devlopers",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev" : "nodemon src/app.js"
+  },
+  "author": "Bipin",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
