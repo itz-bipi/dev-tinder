@@ -2,16 +2,23 @@ const express = require("express");
 
 const app = express();
 
-app.use("/d",(req,res)=>{
-    res.send("hello this is server dashboard!!")
+app.get("/user",(req,res)=>{
+    res.send("get the user dashboard");
 })
 
-app.use("/test",(req,res)=>{
-    res.send("hello this is test dashboard!")
+app.post("/user",(req,res)=>{
+    res.send("save the user data sucessfully");
 })
 
-app.use("/demo",(req,res)=>{
-    res.send("this is demo dashboard!!");
+app.patch("/user",(req,res)=>{
+    res.send("patch the user dashboard");
+})
+
+app.delete("/user",(req,res)=>{
+    res.send("user dashboard deleted sucessfully!");
+})
+app.use("/",(req,res)=>{
+    res.send("Namaste ji!!");
 })
 
 app.listen(3000,()=>{
