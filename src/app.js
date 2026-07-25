@@ -1,20 +1,30 @@
 const express = require("express");
-
+const connectDB = require("./config/database");
 const app = express();
 
-const checkAuth = require("./middlewares/auth")
+const User = require("./models/user");
 
-//checking the authentication for admin user
-app.use("/user",checkAuth)
+app.use(express.json())
 
-app.get("/user/getData",(req,res)=>{
-    res.send("the data is fetched sucessfully!!");
+app.post("/signup",async(req,res)=>{
+        console.log(req.body);
+        const user = new User(req.body);
+        try{
+            await user.save();
+            res.send("user sign up sucessfully!!");
+        }catch(err){
+            res.status(400).send("sign up failed!!");
+        }
+        
 })
 
-app.delete("/user/deleteUser",(req,res)=>{
-    res.send("the user is deleted sucessfully!");
-})
 
-app.listen(3000,()=>{
-    console.log("the server is running on port 3000");
-});
+connectDB()
+    .then(()=>{
+        console.log("Database connection established Sucessfully!!");
+        app.listen(3000,()=>{
+            console.log("app is running in port 3000")
+        })
+    }).catch((err)=>{
+        console.log("Database cnnection failed!" + err);
+    })
