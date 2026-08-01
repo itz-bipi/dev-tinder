@@ -45,11 +45,11 @@ app.delete("/deleteuser",async (req,res)=>{
 app.patch("/updateuser",async(req,res)=>{
     const userId = req.body.userId;
     try{
-        await User.findByIdAndUpdate(userId,req.body);
+        await User.findByIdAndUpdate(userId,req.body,{runValidators : true});
         res.send("user updated sucessfully!!")
     }
     catch(err){
-        res.status(400).send("Somthing went wrong!!");
+        res.status(400).send("Update failed!!" + err.message);
     }
 })
 //sign up in the application
