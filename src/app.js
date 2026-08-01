@@ -1,7 +1,9 @@
 const express = require("express");
+const validator = require("validator");
 const connectDB = require("./config/database");
 const User = require("./models/user");
-
+const { validateSignupData } = require("./utils/validate");
+const bcrypt = require("bcrypt");
 
 const app = express();
 app.use(express.json());
@@ -46,25 +48,25 @@ app.patch("/updateuser", async (req, res) => {
   try {
     //what feild a user can update after creating an acount
     const ALLOWED_UPDATES = [
-    "userId",
-    "password",
-    "age",
-    "gender",
-    "photourl",
-    "about",
-    "skills",
-  ];
-  const isAllowled = Object.keys(req.body).every((k) => {
-    return ALLOWED_UPDATES.includes(k);
-  });
-  console.log(isAllowled);
-  if (!isAllowled) {
-   throw new Error("Update is not valid for this feilds!!!");
-  }
-console.log(req.body.skills.length);
-  if(req.body.skills.length > 10){
-    throw new Error("Skills should be less than 10!!")
-  }
+      "userId",
+      "password",
+      "age",
+      "gender",
+      "photourl",
+      "about",
+      "skills",
+    ];
+    const isAllowled = Object.keys(req.body).every((k) => {
+      return ALLOWED_UPDATES.includes(k);
+    });
+    console.log(isAllowled);
+    if (!isAllowled) {
+      throw new Error("Update is not valid for this feilds!!!");
+    }
+    console.log(req.body.skills.length);
+    if (req.body.skills.length > 10) {
+      throw new Error("Skills should be less than 10!!");
+    }
 
     await User.findByIdAndUpdate(userId, req.body, { runValidators: true });
     res.send("user updated sucessfully!!");
@@ -72,15 +74,51 @@ console.log(req.body.skills.length);
     res.status(400).send("Update failed!!" + err.message);
   }
 });
+
 //sign up in the application
 app.post("/signup", async (req, res) => {
-  console.log(req.body);
-  const user = new User(req.body);
   try {
+    //validate the data first
+    validateSignupData(req);
+    //encrypt the password
+    const { firstName, lastName, email, password } = req.body;
+    const hashPassword = await bcrypt.hash(password, 10);
+    console.log(hashPassword);
+    //save the into db
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashPassword,
+    });
+    console.log("hello");
     await user.save();
     res.send("user sign up sucessfully!!");
   } catch (err) {
     res.status(400).send("sign up failed!!" + err.message);
+  }
+});
+
+//login to the apllication
+app.use("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!validator.isEmail(email)) {
+      throw new Error("Entered email is not valid!!");
+    }
+
+    const user = await User.findOne({ email: email });
+    if (!user) throw new Error("Invalid credential");
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+
+    if (isValidPassword) {
+      res.send("Login sucessfull!!");
+    } else {
+      throw new Error("Invalid credential!!");
+    }
+  } catch (err) {
+    res.status(400).send("Error: " + err.message);
   }
 });
 
