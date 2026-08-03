@@ -4,76 +4,14 @@ const connectDB = require("./config/database");
 const User = require("./models/user");
 const { validateSignupData } = require("./utils/validate");
 const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const userAuth = require("./middlewares/auth");
 
 const app = express();
-app.use(express.json());
+app.use(express.json());//reading all the JSON request
+app.use(cookieParser());//reading the cookie token
 
-//find user from the database
-// app.get("/user",async (req,res)=>{
-//     try{
-//        const user =  await User.find({email : req.body.email});
-//         res.send(user);
-//     }catch(err){
-//         res.status(400).send("somthing went wrong!!!");
-//     }
-
-// })
-
-//bulding feed page of the website
-app.get("/feed", async (req, res) => {
-  try {
-    const users = await User.find({});
-    if (users.length === 0) res.status(400).send("user not found!!");
-    res.send(users);
-  } catch (err) {
-    res.send("Somthing went wrong!!");
-  }
-});
-
-//delete from the data base by findig from the ID
-app.delete("/deleteuser", async (req, res) => {
-  const userId = req.body.userId;
-  try {
-    await User.findByIdAndDelete(userId);
-    res.send("user deleted sucessfully!!");
-  } catch (err) {
-    res.status(400).send("somthing went wrong!!!");
-  }
-});
-
-//update the user by finding through id
-app.patch("/updateuser", async (req, res) => {
-  const userId = req.body.userId;
-
-  try {
-    //what feild a user can update after creating an acount
-    const ALLOWED_UPDATES = [
-      "userId",
-      "password",
-      "age",
-      "gender",
-      "photourl",
-      "about",
-      "skills",
-    ];
-    const isAllowled = Object.keys(req.body).every((k) => {
-      return ALLOWED_UPDATES.includes(k);
-    });
-    console.log(isAllowled);
-    if (!isAllowled) {
-      throw new Error("Update is not valid for this feilds!!!");
-    }
-    console.log(req.body.skills.length);
-    if (req.body.skills.length > 10) {
-      throw new Error("Skills should be less than 10!!");
-    }
-
-    await User.findByIdAndUpdate(userId, req.body, { runValidators: true });
-    res.send("user updated sucessfully!!");
-  } catch (err) {
-    res.status(400).send("Update failed!!" + err.message);
-  }
-});
 
 //sign up in the application
 app.post("/signup", async (req, res) => {
@@ -100,7 +38,7 @@ app.post("/signup", async (req, res) => {
 });
 
 //login to the apllication
-app.use("/login", async (req, res) => {
+app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!validator.isEmail(email)) {
@@ -108,11 +46,17 @@ app.use("/login", async (req, res) => {
     }
 
     const user = await User.findOne({ email: email });
-    if (!user) throw new Error("Invalid credential");
+    if (!user) throw new Error("User not found!!");
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await user.validatePassword(password);
 
     if (isValidPassword) {
+
+      //create JWT token
+      const token = await user.getJWT();
+      //attach inside the cookie to send the user
+      res.cookie("token",token,{expires : new Date(Date.now() + 8 * 3600000)});
+
       res.send("Login sucessfull!!");
     } else {
       throw new Error("Invalid credential!!");
@@ -121,6 +65,30 @@ app.use("/login", async (req, res) => {
     res.status(400).send("Error: " + err.message);
   }
 });
+
+
+//get profile
+app.get("/profile",userAuth,async (req,res) =>{
+  
+  try{
+    
+   const users = req.user;
+   res.send(users);
+  }catch(err){
+    res.status(400).send("Somthing went wrong!!" + err.message)
+  }
+})
+
+app.post("/connectionRequest",userAuth,(req,res) =>{
+  try{
+    const users = req.user;
+    console.log(users);
+    res.send(users.firstName + " send the request");
+  }
+  catch(err){
+    res.status(400).send("Error : " + err.message);
+  }
+})
 
 //connect to the database and start the application
 connectDB()
