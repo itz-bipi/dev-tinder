@@ -20,7 +20,8 @@ const ValidateUserEditData = (req) => {
     "about",
     "photourl",
     "skills",
-    "age"
+    "age",
+    "gender"
   ];
   const isValidToEdit = Object.keys(req.body).every((key) => {
     return validFeild.includes(key);
