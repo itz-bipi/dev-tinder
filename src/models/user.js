@@ -6,7 +6,9 @@ const bcrypt = require("bcrypt");
 const userSchema = new mongoose.Schema({
     firstName : {
         type : String,
-        required : true
+        required : true,
+        index : true,
+        minLength : 4
     },
     lastName : {
         type : String,
@@ -63,6 +65,8 @@ const userSchema = new mongoose.Schema({
 },{
     timestamps : true
 });
+
+
 
 userSchema.methods.getJWT = async function() {
     const user = this;
